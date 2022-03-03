@@ -414,7 +414,7 @@ function selectedLinesReducer(
   { type, lineNumber, numLines, selectedLines }
 ) {
   const newState = {}
-
+  
   switch (type) {
     case 'GROUP': {
       if (prevLine) {
@@ -434,10 +434,21 @@ function selectedLinesReducer(
       for (let i = 0; i < numLines; i++) {
         if (i != lineNumber) {
           if (prevLine == null) {
-            newState[i] = false
+            newState[i] = ''
           }
         } else {
-          newState[lineNumber] = selected[lineNumber] === true ? false : true
+          // newState[lineNumber] = selected[lineNumber] === true ? false : true
+          switch (selected[lineNumber]) {
+            case 'ADDED':
+              newState[lineNumber] = 'REMOVED'
+              break
+            case 'REMOVED':
+              newState[lineNumber] = ''
+              break
+            default:
+              newState[lineNumber] = 'ADDED'
+              break
+          }
         }
       }
     }
@@ -459,10 +470,48 @@ function useSelectedLines(props, editorRef) {
     if (editorRef.current && Object.keys(state.selected).length > 0) {
       editorRef.current.editor.display.view.forEach((line, i) => {
         if (line.text) {
-          line.text.style.opacity = state.selected[i] === true ? 1 : 0.5
+          line.text.style.opacity = state.selected[i] ? 1 : 0.5
+          switch (state.selected[i]) {
+            case 'ADDED':
+              line.text.style.backgroundColor = 'rgba(0, 255, 0, 0.3)'
+              break
+            case 'REMOVED':
+              line.text.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'
+              break
+            default:
+              line.text.style.backgroundColor = 'inherit'
+              break
+          }
         }
         if (line.gutter) {
-          line.gutter.style.opacity = state.selected[i] === true ? 1 : 0.5
+          let linenumberIcon =
+            line.gutter.childNodes[0].getElementsByClassName('linenumber-icon')[0]
+          if (!linenumberIcon) {
+            linenumberIcon = document.createElement('div')
+            linenumberIcon.className = 'linenumber-icon'
+            linenumberIcon.style.position = 'absolute'
+            linenumberIcon.style.left = '0'
+            linenumberIcon.style.top = '0'
+            line.gutter.childNodes[0].append(linenumberIcon)
+          }
+
+          switch (state.selected[i]) {
+            case 'ADDED':
+              line.gutter.childNodes[0].style.backgroundColor = 'rgba(0, 255, 0, 0.3)'
+              // line.gutter.childNodes[0].innerText = `+ ${props.config.firstLineNumber + i}`;
+              linenumberIcon.innerText = '+'
+              break
+            case 'REMOVED':
+              line.gutter.childNodes[0].style.backgroundColor = 'rgba(255, 0, 0, 0.3)'
+              // line.gutter.childNodes[0].innerText = `- ${props.config.firstLineNumber + i}`
+              linenumberIcon.innerText = '-'
+              break
+            default:
+              line.gutter.childNodes[0].style.backgroundColor = 'inherit'
+              // line.gutter.childNodes[0].innerText = `${props.config.firstLineNumber + i}`
+              linenumberIcon.innerText = ''
+              break
+          }
         }
       })
     }
